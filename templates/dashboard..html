@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎬 Human Merge Point - YouTube Factory</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        body {
+            background: #0a0a0f;
+            color: #e2e8f0;
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+        .sidebar {
+            width: 320px;
+            background: #14141c;
+            border-right: 1px solid #2d2d3a;
+            display: flex;
+            flex-direction: column;
+            padding: 20px 0;
+            flex-shrink: 0;
+        }
+        .sidebar h2 {
+            font-size: 18px;
+            font-weight: 600;
+            padding: 0 20px 16px 20px;
+            border-bottom: 1px solid #2d2d3a;
+            color: #94a3b8;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .sidebar h2 span {
+            background: #3b82f6;
+            font-size: 12px;
+            padding: 2px 10px;
+            border-radius: 20px;
+            color: white;
+            font-weight: 500;
+        }
+        .video-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 12px 0 12px;
+        }
+        .video-item {
+            background: #1e1e2a;
+            padding: 14px 16px;
+            margin-bottom: 8px;
+            border-radius: 10px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s ease;
+        }
+        .video-item:hover {
+            background: #28283a;
+        }
+        .video-item.active {
+            border-color: #3b82f6;
+            background: #1a2744;
+        }
+        .video-item .topic {
+            font-weight: 500;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .video-item .meta {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 6px;
+            font-size: 12px;
+            color: #64748b;
+        }
+        .video-item .status-badge {
+            background: #f59e0b;
+            color: #000;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .video-item .status-badge.failed {
+            background: #ef4444;
+            color: white;
+        }
+        .main-content {
+            flex: 1;
+            padding: 30px 40px;
+            overflow-y: auto;
+            background: #0f0f14;
+        }
+        .main-content h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            color: #f1f5f9;
+        }
+        .main-content h1 small {
+            font-weight: 400;
+            color: #64748b;
+            font-size: 16px;
+            margin-left: 12px;
+        }
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 60vh;
+            color: #475569;
+        }
+        .empty-state h2 {
+            font-size: 28px;
+            font-weight: 300;
+            margin-top: 20px;
+        }
+        .preview-section {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        .video-wrapper video {
+            width: 100%;
+            border-radius: 14px;
+            background: #000;
+            border: 1px solid #2d2d3a;
+            max-height: 420px;
+        }
+        .thumb-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .thumb-grid label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #94a3b8;
+        }
+        .thumb-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .thumb-option {
+            border-radius: 10px;
+            overflow: hidden;
+            border: 3px solid transparent;
+            cursor: pointer;
+            transition: 0.15s;
+            background: #1e1e2a;
+        }
+        .thumb-option img {
+            width: 100%;
+            display: block;
+            aspect-ratio: 16/9;
+            object-fit: cover;
+        }
+        .thumb-option.selected {
+            border-color: #3b82f6;
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+        }
+        .thumb-option:hover {
+            opacity: 0.8;
+        }
+        .title-section {
+            margin-bottom: 24px;
+        }
+        .title-section label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #94a3b8;
+            display: block;
+            margin-bottom: 8px;
+        }
+        .title-options {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+        .title-option {
+            background: #1e1e2a;
+            padding: 10px 16px;
+            border-radius: 8px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            font-size: 14px;
+            transition: 0.15s;
+            max-width: 300px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .title-option.selected {
+            border-color: #3b82f6;
+            background: #1a2744;
+        }
+        .title-option:hover {
+            background: #28283a;
+        }
+        .title-input {
+            width: 100%;
+            background: #1a1a26;
+            border: 1px solid #2d2d3a;
+            color: #f1f5f9;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 16px;
+            outline: none;
+        }
+        .title-input:focus {
+            border-color: #3b82f6;
+        }
+        .meta-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+            margin-bottom: 30px;
+        }
+        .meta-grid label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #94a3b8;
+            display: block;
+            margin-bottom: 6px;
+        }
+        .meta-grid textarea, .meta-grid input {
+            width: 100%;
+            background: #1a1a26;
+            border: 1px solid #2d2d3a;
+            color: #f1f5f9;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 14px;
+            outline: none;
+            resize: vertical;
+        }
+        .meta-grid textarea {
+            min-height: 120px;
+        }
+        .meta-grid textarea:focus, .meta-grid input:focus {
+            border-color: #3b82f6;
+        }
+        .action-bar {
+            display: flex;
+            gap: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #2d2d3a;
+            align-items: center;
+        }
+        .btn {
+            padding: 12px 32px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 15px;
+            border: none;
+            cursor: pointer;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: scale(1.02);
+        }
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+        .btn-secondary {
+            background: #2d2d3a;
+            color: #94a3b8;
+        }
+        .btn-secondary:hover {
+            background: #3d3d4a;
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .toast {
+            margin-left: auto;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            background: #1e293b;
+            color: #94a3b8;
+        }
+        .toast.success { background: #064e3b; color: #6ee7b7; }
+        .toast.error { background: #7f1d1d; color: #fca5a5; }
+        @media (max-width: 1024px) {
+            .preview-section { grid-template-columns: 1fr; }
+            .meta-grid { grid-template-columns: 1fr; }
+            .sidebar { width: 240px; }
+        }
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            .sidebar { width: 100%; height: 200px; border-right: none; border-bottom: 1px solid #2d2d3a; }
+            .main-content { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h2>📋 Pending <span id="count-badge">0</span></h2>
+        <div class="video-list" id="videoList">
+            <!-- Videos will be loaded dynamically -->
+        </div>
+    </div>
+
+    <div class="main-content" id="mainContent">
+        <h1>📺 Human Merge Point <small>Review & Approve Final Bundle</small></h1>
+
+        <div id="emptyState" class="empty-state">
+            <div style="font-size: 64px;">✅</div>
+            <h2>No videos to review</h2>
+            <p style="color:#64748b; margin-top:8px;">The factory is idle. Check back later.</p>
+        </div>
+
+        <div id="detailView" style="display:none;">
+            <div class="preview-section">
+                <div class="video-wrapper">
+                    <video id="videoPlayer" controls preload="metadata"></video>
+                </div>
+                <div class="thumb-grid">
+                    <label>🎯 Select Thumbnail</label>
+                    <div class="thumb-options" id="thumbOptions"></div>
+                </div>
+            </div>
+
+            <div class="title-section">
+                <label>✏️ Select / Edit Title (Under 60 chars)</label>
+                <div class="title-options" id="titleOptions"></div>
+                <input class="title-input" id="titleInput" placeholder="Or type custom title..." maxlength="100">
+            </div>
+
+            <div class="meta-grid">
+                <div>
+                    <label>📝 Description</label>
+                    <textarea id="descriptionInput" placeholder="Write the video description (300+ words recommended)"></textarea>
+                </div>
+                <div>
+                    <label>🏷️ Tags (comma separated)</label>
+                    <input id="tagsInput" placeholder="e.g. tech, AI, tutorial">
+                </div>
+            </div>
+
+            <div class="action-bar">
+                <button class="btn btn-primary" id="approveBtn" onclick="approveVideo()">✅ Approve & Upload</button>
+                <button class="btn btn-danger" onclick="rejectVideo()">❌ Reject</button>
+                <button class="btn btn-secondary" onclick="resetSelection()">↺ Reset</button>
+                <span id="statusToast" class="toast">Ready</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentVideo = null;
+        let selectedThumb = null;
+        let selectedTitle = null;
+
+        // Load videos from API
+        async function loadVideoList() {
+            try {
+                const res = await fetch('/api/videos');
+                const videos = await res.json();
+                const list = document.getElementById('videoList');
+                const badge = document.getElementById('count-badge');
+                
+                list.innerHTML = '';
+                badge.textContent = videos.length;
+
+                if (videos.length === 0) {
+                    list.innerHTML = '<div style="color:#475569; text-align:center; padding:40px 0;">🎉 No videos pending.</div>';
+                    document.getElementById('emptyState').style.display = 'block';
+                    document.getElementById('detailView').style.display = 'none';
+                    return;
+                }
+
+                videos.forEach(v => {
+                    const div = document.createElement('div');
+                    div.className = 'video-item';
+                    div.dataset.id = v.id;
+                    div.innerHTML = `
+                        <div class="topic">${v.topic}</div>
+                        <div class="meta">
+                            <span>${v.created_at ? v.created_at.slice(0,10) : 'New'}</span>
+                            <span class="status-badge">${v.status}</span>
+                        </div>
+                    `;
+                    div.onclick = () => loadVideo(v.id);
+                    list.appendChild(div);
+                });
+
+                // Auto-load first video
+                if (videos.length > 0) {
+                    loadVideo(videos[0].id);
+                }
+            } catch (error) {
+                console.error('Error loading videos:', error);
+            }
+        }
+
+        async function loadVideo(videoId) {
+            document.querySelectorAll('.video-item').forEach(el => el.classList.remove('active'));
+            const item = document.querySelector(`.video-item[data-id="${videoId}"]`);
+            if (item) item.classList.add('active');
+
+            try {
+                const res = await fetch(`/api/videos/${videoId}`);
+                if (!res.ok) throw new Error('Failed to fetch');
+                currentVideo = await res.json();
+
+                document.getElementById('detailView').style.display = 'block';
+                document.getElementById('emptyState').style.display = 'none';
+
+                const player = document.getElementById('videoPlayer');
+                player.src = currentVideo.video_url || '';
+                player.load();
+
+                const thumbContainer = document.getElementById('thumbOptions');
+                thumbContainer.innerHTML = '';
+                selectedThumb = currentVideo.selected_thumbnail || currentVideo.thumbnail_urls[0] || null;
+                currentVideo.thumbnail_urls.forEach((url, idx) => {
+                    const div = document.createElement('div');
+                    div.className = `thumb-option ${url === selectedThumb ? 'selected' : ''}`;
+                    div.innerHTML = `<img src="${url}" alt="Thumbnail ${idx+1}">`;
+                    div.onclick = () => selectThumbnail(url);
+                    thumbContainer.appendChild(div);
+                });
+
+                const titleContainer = document.getElementById('titleOptions');
+                titleContainer.innerHTML = '';
+                selectedTitle = currentVideo.selected_title || currentVideo.title_variants[0] || '';
+                currentVideo.title_variants.forEach((title) => {
+                    const span = document.createElement('span');
+                    span.className = `title-option ${title === selectedTitle ? 'selected' : ''}`;
+                    span.textContent = title;
+                    span.onclick = () => selectTitle(title);
+                    titleContainer.appendChild(span);
+                });
+
+                document.getElementById('titleInput').value = selectedTitle;
+                document.getElementById('descriptionInput').value = currentVideo.description || '';
+                document.getElementById('tagsInput').value = currentVideo.tags || '';
+
+                setToast(`Loaded: ${currentVideo.topic}`, 'success');
+
+            } catch (error) {
+                setToast('Error loading video: ' + error.message, 'error');
+            }
+        }
+
+        function selectThumbnail(url) {
+            selectedThumb = url;
+            document.querySelectorAll('.thumb-option').forEach(el => el.classList.remove('selected'));
+            document.querySelectorAll('.thumb-option img').forEach(img => {
+                if (img.src === url) img.parentElement.classList.add('selected');
+            });
+        }
+
+        function selectTitle(title) {
+            selectedTitle = title;
+            document.querySelectorAll('.title-option').forEach(el => el.classList.remove('selected'));
+            document.querySelectorAll('.title-option').forEach(el => {
+                if (el.textContent === title) el.classList.add('selected');
+            });
+            document.getElementById('titleInput').value = title;
+        }
+
+        document.getElementById('titleInput').addEventListener('input', function(e) {
+            selectedTitle = e.target.value;
+            document.querySelectorAll('.title-option').forEach(el => el.classList.remove('selected'));
+        });
+
+        function resetSelection() {
+            if (currentVideo) {
+                selectThumbnail(currentVideo.thumbnail_urls[0]);
+                selectTitle(currentVideo.title_variants[0]);
+                setToast('Selection reset', 'success');
+            }
+        }
+
+        async function approveVideo() {
+            if (!currentVideo) return setToast('No video loaded', 'error');
+            const btn = document.getElementById('approveBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Uploading...';
+
+            const payload = {
+                selected_title: document.getElementById('titleInput').value.trim() || selectedTitle,
+                selected_thumbnail: selectedThumb,
+                description: document.getElementById('descriptionInput').value.trim(),
+                tags: document.getElementById('tagsInput').value.trim()
+            };
+
+            try {
+                const res = await fetch(`/api/approve/${currentVideo.id}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    setToast('✅ Approved! Upload pipeline triggered.', 'success');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    throw new Error(data.detail || 'Approval failed');
+                }
+            } catch (error) {
+                setToast('Error: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '✅ Approve & Upload';
+            }
+        }
+
+        async function rejectVideo() {
+            if (!currentVideo) return setToast('No video loaded', 'error');
+            const reason = prompt('🔴 Rejection Reason (this will be fed to the Learning Edge):', 'Poor thumbnail, script was boring');
+            if (reason === null) return;
+
+            try {
+                const res = await fetch(`/api/reject/${currentVideo.id}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason: reason })
+                });
+                if (res.ok) {
+                    setToast(`❌ Rejected: ${reason}`, 'error');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    throw new Error('Rejection failed');
+                }
+            } catch (error) {
+                setToast('Error: ' + error.message, 'error');
+            }
+        }
+
+        function setToast(msg, type = 'info') {
+            const toast = document.getElementById('statusToast');
+            toast.textContent = msg;
+            toast.className = 'toast ' + type;
+        }
+
+        // Load videos on page load
+        document.addEventListener('DOMContentLoaded', loadVideoList);
+    </script>
+</body>
+</html>
