@@ -17,7 +17,7 @@ TEMPLATES_DIR = BASE_DIR / "templates"
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 # ============================================
-# PART 1: Initialize Redis (Code Block #2)
+# Initialize Redis
 # ============================================
 # Initialize the Redis client using environment variables
 redis = Redis.from_env()
@@ -39,7 +39,7 @@ def video_to_dict(row: dict) -> dict:
     }
 
 # ============================================
-# PART 2: API Endpoints (Code Block #3)
+# API Endpoints
 # ============================================
 
 # API endpoint to get all videos
@@ -107,7 +107,7 @@ async def reject_video(video_id: str):
     return {"status": "rejected"}
 
 # ============================================
-# PART 3: Startup Event (Code Block #4)
+# Startup Event (FIXED)
 # ============================================
 @app.on_event("startup")
 async def startup():
@@ -116,7 +116,8 @@ async def startup():
     if video_count == 0:
         video_id = "test-001"
         # Store video data as a Redis hash
-        await redis.hset(f"video:{video_id}", mapping={
+        # FIXED: Removed 'mapping=' keyword
+        await redis.hset(f"video:{video_id}", {
             "id": video_id,
             "topic": "How AI is Changing YouTube Forever",
             "status": "PENDING_APPROVAL",
