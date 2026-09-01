@@ -90,14 +90,16 @@ async def dashboard(request: Request):
         </html>
         """, status_code=500)
 
+# Update approve endpoint to use hset correctly
 @app.post("/api/approve/{video_id}")
 async def approve_video(video_id: str):
-    # Update the status in Redis
+    # Update the status in Redis using individual field-value pairs
     await redis.hset(f"video:{video_id}", "status", "UPLOADING")
     # Remove from the pending set
     await redis.srem("videos:pending", video_id)
     return {"status": "approved"}
 
+# Update reject endpoint to use hset correctly
 @app.post("/api/reject/{video_id}")
 async def reject_video(video_id: str):
     await redis.hset(f"video:{video_id}", "status", "FAILED")
@@ -115,22 +117,20 @@ async def startup():
     video_count = await redis.scard("videos:all")
     if video_count == 0:
         video_id = "test-001"
-        # Store video data as a Redis hash
-        # FIXED: Removed 'mapping=' keyword
-        await redis.hset(f"video:{video_id}", {
-            "id": video_id,
-            "topic": "How AI is Changing YouTube Forever",
-            "status": "PENDING_APPROVAL",
-            "title_variants": json.dumps(["AI is Taking Over YouTube", "YouTube AI Revolution 2024", "How AI Creates Videos"]),
-            "thumbnail_urls": json.dumps([
-                "https://via.placeholder.com/1280x720/1a1a2e/ffffff?text=Thumbnail+1",
-                "https://via.placeholder.com/1280x720/16213e/ffffff?text=Thumbnail+2",
-                "https://via.placeholder.com/1280x720/0f3460/ffffff?text=Thumbnail+3"
-            ]),
-            "description": "This video explains how AI is transforming content creation on YouTube.",
-            "tags": "AI, YouTube, Automation",
-            "created_at": str(datetime.now())
-        })
+        # Store video data using individual field-value pairs
+        await redis.hset(f"video:{video_id}", "id", video_id)
+        await redis.hset(f"video:{video_id}", "topic", "How AI is Changing YouTube Forever")
+        await redis.hset(f"video:{video_id}", "status", "PENDING_APPROVAL")
+        await redis.hset(f"video:{video_id}", "title_variants", json.dumps(["AI is Taking Over YouTube", "YouTube AI Revolution 2024", "How AI Creates Videos"]))
+        await redis.hset(f"video:{video_id}", "thumbnail_urls", json.dumps([
+            "https://via.placeholder.com/1280x720/1a1a2e/ffffff?text=Thumbnail+1",
+            "https://via.placeholder.com/1280x720/16213e/ffffff?text=Thumbnail+2",
+            "https://via.placeholder.com/1280x720/0f3460/ffffff?text=Thumbnail+3"
+        ]))
+        await redis.hset(f"video:{video_id}", "description", "This video explains how AI is transforming content creation on YouTube.")
+        await redis.hset(f"video:{video_id}", "tags", "AI, YouTube, Automation")
+        await redis.hset(f"video:{video_id}", "created_at", str(datetime.now()))
+        
         # Add the video ID to the "all videos" set and the "pending" set
         await redis.sadd("videos:all", video_id)
         await redis.sadd("videos:pending", video_id)
