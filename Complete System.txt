@@ -1,0 +1,17 @@
+┌─────────────────────────────────────────────────────────────────┐
+│                    YOUR COMPLETE SYSTEM                         │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  1. Researcher    →   Finds topics (runs Monday)               │
+│         ↓                                                       │
+│  2. Scriptwriter  →   Writes script + generates assets          │
+│         ↓                                                       │
+│  3. Video Editor  →   Creates final video file                 │
+│         ↓                                                       │
+│  4. Dashboard     →   YOU approve or reject 👈 YOU ARE HERE    │
+│         ↓                                                       │
+│  5. Uploader      →   Publishes to YouTube                     │
+│         ↓                                                       │
+│  6. Retrospective →   Learns from your rejections (Sunday)     │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
