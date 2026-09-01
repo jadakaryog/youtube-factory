@@ -1,19 +1,23 @@
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 import sqlite3
 import json
+import os
 from pathlib import Path
 
 app = FastAPI()
 
-# Create folders
+# Get the absolute path to the templates folder
+# This works on both Render and local development
+BASE_DIR = Path(__file__).resolve().parent
+TEMPLATES_DIR = BASE_DIR / "templates"
+
+# Create folders if they don't exist
 Path("media/videos").mkdir(parents=True, exist_ok=True)
 
-# Setup templates with a custom environment to avoid the cache bug
-templates = Jinja2Templates(directory="templates")
-# Clear the cache to avoid the bug
-templates.env.cache = {}
+# Setup templates with absolute path
+templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 # Setup database
 def init_db():
@@ -67,43 +71,19 @@ def add_dummy_video():
 
 add_dummy_video()
 
-# Use a direct HTML response instead of template to test
-@app.get("/", response_class=HTMLResponse)
-async def dashboard(request: Request):
+# API endpoint to get all videos for the sidebar
+@app.get("/api/videos", response_class=JSONResponse)
+async def get_all_videos():
     conn = sqlite3.connect("youtube_factory.db")
     conn.row_factory = sqlite3.Row
     rows = conn.execute(
         "SELECT id, topic, status, created_at FROM videos WHERE status IN ('PENDING_APPROVAL', 'FAILED') ORDER BY created_at DESC"
     ).fetchall()
     conn.close()
-    
-    # Convert rows to list of dicts for the template
-    videos = [dict(row) for row in rows]
-    
-    try:
-        return templates.TemplateResponse("dashboard.html", {"request": request, "videos": videos})
-    except Exception as e:
-        # If template fails, show a simple page
-        html_content = f"""
-        <html>
-            <head><title>YouTube Factory</title></head>
-            <body style="background:#0a0a0f; color:white; font-family: Arial; padding:40px;">
-                <h1>🎬 YouTube Factory - Human Merge Point</h1>
-                <h2>Pending Videos: {len(videos)}</h2>
-                <ul>
-        """
-        for v in videos:
-            html_content += f"<li>{v['topic']} - {v['status']}</li>"
-        html_content += """
-                </ul>
-                <p style="color:#94a3b8; margin-top:40px;">Template error: The dashboard HTML file might be missing or corrupted.</p>
-                <p>Check that <code>templates/dashboard.html</code> exists.</p>
-            </body>
-        </html>
-        """
-        return HTMLResponse(content=html_content)
+    return [dict(row) for row in rows]
 
-@app.get("/api/videos/{video_id}")
+# API endpoint to get a specific video
+@app.get("/api/videos/{video_id}", response_class=JSONResponse)
 async def get_video(video_id: str):
     conn = sqlite3.connect("youtube_factory.db")
     conn.row_factory = sqlite3.Row
@@ -126,6 +106,27 @@ async def get_video(video_id: str):
         "selected_thumbnail": row["selected_thumbnail"]
     }
 
+# Dashboard page
+@app.get("/", response_class=HTMLResponse)
+async def dashboard(request: Request):
+    try:
+        return templates.TemplateResponse("dashboard.html", {"request": request})
+    except Exception as e:
+        # If template fails, show fallback with error details
+        return HTMLResponse(content=f"""
+        <html>
+            <head><title>YouTube Factory</title></head>
+            <body style="background:#0a0a0f; color:white; font-family: Arial; padding:40px;">
+                <h1>🎬 YouTube Factory</h1>
+                <h2>⚠️ Template Error</h2>
+                <p>Error: {str(e)}</p>
+                <p>Looking for templates at: {TEMPLATES_DIR}</p>
+                <p>Files in this directory: {list(BASE_DIR.iterdir())}</p>
+                <p>Files in templates folder: {list(TEMPLATES_DIR.iterdir()) if TEMPLATES_DIR.exists() else 'Templates folder not found'}</p>
+            </body>
+        </html>
+        """, status_code=500)
+
 @app.post("/api/approve/{video_id}")
 async def approve_video(video_id: str):
     conn = sqlite3.connect("youtube_factory.db")
@@ -144,4 +145,4 @@ async def reject_video(video_id: str):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
